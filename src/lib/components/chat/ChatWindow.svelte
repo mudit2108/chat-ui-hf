@@ -6,7 +6,7 @@
 	import CarbonExport from "~icons/carbon/export";
 	import CarbonStopFilledAlt from "~icons/carbon/stop-filled-alt";
 	import EosIconsLoading from "~icons/eos-icons/loading";
-import Modal from '../Modal.svelte';
+    import Modal from '../Modal.svelte';
 	import ChatMessages from "./ChatMessages.svelte";
 	import ChatInput from "./ChatInput.svelte";
 	import StopGeneratingBtn from "../StopGeneratingBtn.svelte";
@@ -18,7 +18,6 @@ import Modal from '../Modal.svelte';
 	import { page } from "$app/stores";
 	import DisclaimerModal from "../DisclaimerModal.svelte";
 	import RetryBtn from "../RetryBtn.svelte";
-
 	export let messages: Message[] = [];
 	export let loading = false;
 	export let pending = false;
@@ -28,13 +27,15 @@ import Modal from '../Modal.svelte';
 	export let settings: LayoutData["settings"];
 	export let webSearchMessages: WebSearchUpdate[] = [];
 	export let preprompt: string | undefined = undefined;
-
+	
 	$: isReadOnly = !models.some((model) => model.id === currentModel.id);
 
 	let loginModalOpen = false;
 	let message: string;
-	let readFile=false;
+	let userCode:string;
+	let readFile:boolean=false ;
 	let path='';
+
 
 	const dispatch = createEventDispatcher<{
 		message: string;
@@ -42,6 +43,7 @@ import Modal from '../Modal.svelte';
 		stop: void;
 		retry: { id: Message["id"]; content: string };
 	}>();
+
 
 	const handleSubmit = () => {
 		if (loading) return;
@@ -53,20 +55,31 @@ import Modal from '../Modal.svelte';
 
 
 const handleReadFile=()=>{
+	 dispatch("stop")
     readFile=true;
-	console.log(readFile)
-	console.log('clicked')
 }
 
 const getpath=(e:any)=>{
 path= e.target.value
 }
 
-
-
-
-
-
+const getPathData= async()=>{
+	let header={
+    method: 'GET',
+    headers: {
+    'Content-Type': 'application/json',
+  }
+}
+try {
+ const res=await fetch(`http://localhost:8000/v1/dir?path_dir=${path}`,header )
+let data=await res.json()
+userCode=data.content;
+message =  message + " " + data.content;
+} catch (error) {
+ console.log(error)
+}
+  readFile=false;
+}
 </script>
 
 <div class="relative min-h-0 min-w-0">
@@ -148,13 +161,7 @@ path= e.target.value
 					/>
 				{/if}
 
-					<button
-				on:click={handleReadFile}
-						class="btn  my-1 h-[2.4rem] self-end rounded-lg bg-transparent p-1 px-[0.7rem] text-gray-400 disabled:opacity-60 enabled:hover:text-gray-700 dark:disabled:opacity-40 enabled:dark:hover:text-gray-100"
-						
-					>
-						<IconRead />
-				</button>
+				
 
 				{#if loading}
 					<button
@@ -169,6 +176,13 @@ path= e.target.value
 						<EosIconsLoading />
 					</div>
 				{:else}
+	           <button
+				on:click={(e)=> {  e.preventDefault(); // Prevent form submission
+        handleReadFile();}}
+						class="btn  my-1 h-[2.4rem] self-end rounded-lg bg-transparent p-1 px-[0.7rem] text-gray-400 disabled:opacity-60 enabled:hover:text-gray-700 dark:disabled:opacity-40 enabled:dark:hover:text-gray-100"		
+						>
+						<IconRead />
+				</button>
 
 					<button
 						class="btn mx-1 my-1 h-[2.4rem] self-end rounded-lg bg-transparent p-1 px-[0.7rem] text-gray-400 disabled:opacity-60 enabled:hover:text-gray-700 dark:disabled:opacity-40 enabled:dark:hover:text-gray-100"
@@ -219,23 +233,18 @@ path= e.target.value
 		<div class="w-full pl-2 flex gap-3 items-center">
 
 	<span class="min-w-[100px]">File Path</span>
-			<input  bind:value={path} on:change={getpath}  class=" font-[300] border border-gray-500 w-[250px] px-2 rounded outline-none py-1 text-sm" type='text' placeholder="Enter your file name here..."/>
+			<input  bind:value={path} on:change={getpath}  class=" font-[300] border border-gray-500 w-[250px] px-2 rounded outline-none py-1 text-sm" type='text' placeholder="Enter your file path here..."/>
 			
 		</div>
 
 		
 <div class="flex justify-center mt-5">
 <button 
-
+on:click={getPathData}
 class="btn mx-auto right-12 rounded-lg border border-gray-200 px-5 py-[6px] text-sm shadow-sm transition-all hover:border-gray-300 active:shadow-inner dark:border-gray-600 dark:hover:border-gray-400	
-"> Submit</button>
-
-
+"> Get Data</button>
 </div>
-
-	</div>
-
-	
+	</div>	
 </Modal>
 {/if}
 	
